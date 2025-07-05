@@ -5,9 +5,9 @@ import 'leaflet/dist/leaflet.css';
 // Ícone padrão do Leaflet
 const defaultIcon = new L.Icon.Default();
 
-// Ícone de alfinete para pontos estacionários
+// Ícone de alfinete para pontos estacionários (className 'leaflet-div-icon' aplica o estilo correto)
 const pinIcon = new L.DivIcon({
-  html: '🛻',
+  html: '🚗',
   className: 'leaflet-div-icon',
   iconSize: [24, 24],
   iconAnchor: [12, 24],
@@ -22,20 +22,19 @@ export default function VehicleMap({ positions }) {
     <MapContainer center={coords[0]} zoom={13} style={{ height: '80vh' }}>
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
-      {/* Trajecto */}
+      {/* Trajeto */}
       <Polyline positions={coords} />
 
       {positions.map((p, idx) => {
-        // Garantir que speed é número
-        const speed = typeof p.speed === 'number' ? p.speed : null;
-        // Ponto parado só se speed === 0
+        // Considere parado somente se speed === 0
+        const speed = typeof p.speed === 'number' ? p.speed : 0;
         const isStationary = speed === 0;
         const icon = isStationary ? pinIcon : defaultIcon;
 
-        // Conversão de data segura
+        // Data/hora
         const date = p.at ? new Date(p.at) : null;
-        const timeStr = date && !isNaN(date) 
-          ? date.toLocaleTimeString() 
+        const timeStr = date && !isNaN(date)
+          ? date.toLocaleTimeString()
           : '—';
 
         return (
@@ -43,7 +42,9 @@ export default function VehicleMap({ positions }) {
             <Popup>
               <div>
                 <strong>Ponto {idx + 1}</strong><br/>
-                Velocidade: {speed !== null ? `${speed.toFixed(1)} km/h` : '—'}<br/>
+                Latitude: {p.lat.toFixed(5)}<br/>
+                Longitude: {p.lng.toFixed(5)}<br/>
+                Velocidade: {speed.toFixed(1)} km/h<br/>
                 Bateria: {typeof p.bat === 'number' ? `${p.bat.toFixed(2)} V` : '—'}<br/>
                 Hora: {timeStr}<br/>
                 {isStationary && <strong>Estacionado aqui</strong>}
@@ -58,18 +59,19 @@ export default function VehicleMap({ positions }) {
         <Popup>
           <div>
             <strong>Última Posição</strong><br/>
-            Velocidade: {typeof positions[positions.length - 1].speed === 'number'
-              ? `${positions[positions.length - 1].speed.toFixed(1)} km/h`
-              : '—'}<br/>
-            Bateria: {typeof positions[positions.length - 1].bat === 'number'
-              ? `${positions[positions.length - 1].bat.toFixed(2)} V`
-              : '—'}<br/>
-            Hora: {
-              (() => {
-                const d = positions[positions.length - 1].at ? new Date(positions[positions.length - 1].at) : null;
-                return d && !isNaN(d) ? d.toLocaleString() : '—';
-              })()
-            }
+            {(() => {
+              const last = positions[positions.length - 1];
+              const sp = typeof last.speed === 'number' ? last.speed : 0;
+              const bt = typeof last.bat === 'number' ? last.bat : null;
+              const dt = last.at ? new Date(last.at) : null;
+              return (
+                <>
+                  Velocidade: {sp.toFixed(1)} km/h<br/>
+                  Bateria: {bt !== null ? `${bt.toFixed(2)} V` : '—'}<br/>
+                  Hora: {dt && !isNaN(dt) ? dt.toLocaleString() : '—'}
+                </>
+              );
+            })()}
           </div>
         </Popup>
       </Marker>

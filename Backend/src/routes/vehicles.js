@@ -24,11 +24,12 @@ r.post(
   restrictVehicle,
   async (req, res) => {
     const { id } = req.params;
-    const { lat, lng, speed = 0, bat = 0 } = req.body;
+    const { lat, lng, speed = 0, battery = 0 } = req.body;  // ← renomeado para battery
     const v = await Vehicle.findById(id);
     if (!v) return res.sendStatus(404);
 
-    v.telemetry.push({ lat, lng, speed, bat, at: new Date() });
+    // push usando battery em vez de bat
+    v.telemetry.push({ lat, lng, speed, battery, at: new Date() });
     await v.save();
     return res.json({ ok: true });
   }
@@ -46,12 +47,12 @@ r.get(
   authorizeRoles('admin','user'),
   restrictVehicle,
   async (req, res) => {
-    const { id }        = req.params;
+    const { id }          = req.params;
     const { range = 'day' } = req.query;
-    const multipliers   = { day: 1, week: 7, month: 30 };
-    const sinceMs       = multipliers[range] * 24 * 3600 * 1000;
-    const cutoff        = new Date(Date.now() - sinceMs);
-    const v             = await Vehicle.findById(id);
+    const multipliers     = { day: 1, week: 7, month: 30 };
+    const sinceMs         = multipliers[range] * 24 * 3600 * 1000;
+    const cutoff          = new Date(Date.now() - sinceMs);
+    const v               = await Vehicle.findById(id);
     if (!v) return res.sendStatus(404);
 
     // Filtra só as leituras após o cutoff

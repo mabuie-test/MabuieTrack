@@ -2,12 +2,10 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Ícone padrão (linha do trajecto)
+// Ícones
 const defaultIcon = new L.Icon.Default();
-
-// Ícone de alfinete (📌) para pontos estacionários
 const pinIcon = new L.DivIcon({
-  html: '📌',
+  html: '🛻',
   className: '',
   iconSize: [24, 24],
   iconAnchor: [12, 24],
@@ -26,8 +24,17 @@ export default function VehicleMap({ positions }) {
       <Polyline positions={coords} />
 
       {positions.map((p, idx) => {
-        const isStationary = (p.speed ?? 0) < 1; // limiar de 1 km/h
+        // Safe parsing
+        const speed = typeof p.speed === 'number' ? p.speed : null;
+        const bat   = typeof p.bat   === 'number' ? p.bat   : null;
+        const date  = p.at ? new Date(p.at) : null;
+        const timeStr = date && !isNaN(date)
+          ? date.toLocaleTimeString()
+          : '—';
+
+        const isStationary = speed !== null ? speed < 1 : false;
         const icon = isStationary ? pinIcon : defaultIcon;
+
         return (
           <Marker key={idx} position={[p.lat, p.lng]} icon={icon}>
             <Popup>
@@ -35,26 +42,41 @@ export default function VehicleMap({ positions }) {
                 <strong>Ponto {idx + 1}</strong><br/>
                 Latitude: {p.lat.toFixed(5)}<br/>
                 Longitude: {p.lng.toFixed(5)}<br/>
-                Velocidade: {p.speed?.toFixed(1) ?? '—'} km/h<br/>
-                Bateria: {p.bat?.toFixed(2) ?? '—'} V<br/>
-                <em>Hora: {new Date(p.at).toLocaleTimeString()}</em>
-                {isStationary && (
-                  <><br/><strong>Estacionado aqui</strong></>
-                )}
+                Velocidade: {speed !== null ? `${speed.toFixed(1)} km/h` : '—'}<br/>
+                Bateria: {bat   !== null ? `${bat.toFixed(2)} V` : '—'}<br/>
+                Hora: {timeStr}<br/>
+                {isStationary && <strong>Estacionado aqui</strong>}
               </div>
             </Popup>
           </Marker>
         );
       })}
 
-      {/* Marcador final (destacado) */}
+      {/* Última posição destacada */}
       <Marker position={coords[coords.length - 1]} icon={defaultIcon}>
         <Popup>
           <div>
             <strong>Última Posição</strong><br/>
-            Velocidade: {positions[positions.length - 1].speed?.toFixed(1) ?? '—'} km/h<br/>
-            Bateria: {positions[positions.length - 1].bat?.toFixed(2) ?? '—'} V<br/>
-            Hora: {new Date(positions[positions.length - 1].at).toLocaleString()}
+            Velocidade: {
+              typeof positions[positions.length - 1].speed === 'number'
+                ? `${positions[positions.length - 1].speed.toFixed(1)} km/h`
+                : '—'
+            }<br/>
+            Bateria: {
+              typeof positions[positions.length - 1].bat === 'number'
+                ? `${positions[positions.length - 1].bat.toFixed(2)} V`
+                : '—'
+            }<br/>
+            Hora: {
+              (() => {
+                const d = positions[positions.length - 1].at
+                  ? new Date(positions[positions.length - 1].at)
+                  : null;
+                return d && !isNaN(d)
+                  ? d.toLocaleString()
+                  : '—';
+              })()
+            }
           </div>
         </Popup>
       </Marker>

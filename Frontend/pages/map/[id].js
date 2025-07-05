@@ -1,9 +1,9 @@
 import { useRouter } from 'next/router';
-import useSWR from 'swr';
-import dynamic from 'next/dynamic';
-import api from '../../src/api';
+import useSWR        from 'swr';
+import dynamic       from 'next/dynamic';
+import api           from '../../src/api';
 
-// Carrega o mapa apenas no cliente, importando do caminho correto
+// Carrega o map sem SSR
 const VehicleMap = dynamic(
   () => import('../../src/components/VehicleMap'),
   { ssr: false }
@@ -13,16 +13,15 @@ export default function MapPage() {
   const { query } = useRouter();
   const id = query.id;
 
-  // Apenas faz fetch quando `id` estiver definido
+  // Fetch client‑side do histórico daquele veículo
   const { data, error } = useSWR(
-    () => (id ? `/vehicles/history?range=day` : null),
+    () => id ? `/vehicles/${id}/history?range=day` : null,
     url => api.get(url).then(r => r.data)
   );
 
   if (error) return <p>Erro ao carregar posições.</p>;
   if (!data)  return <p>Carregando…</p>;
 
-  // Extrai apenas lat/lng
   const positions = data.map(p => ({ lat: p.lat, lng: p.lng }));
 
   return (

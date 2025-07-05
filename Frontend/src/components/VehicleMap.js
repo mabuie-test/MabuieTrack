@@ -3,6 +3,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 // Ícone padrão do Leaflet
+const defaultIcon = new L.Icon.Default();
 
 // Ícone de alfinete para pontos estacionários
 const pinIcon = new L.DivIcon({

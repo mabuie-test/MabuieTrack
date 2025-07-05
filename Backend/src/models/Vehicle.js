@@ -4,7 +4,7 @@ const telemetrySchema = new mongoose.Schema({
   lat:    Number,
   lng:    Number,
   speed:  Number,
-  bat:    Number,
+  baterry:    Number,
   at:     { type: Date, default: Date.now }
 }, { _id: false });
 

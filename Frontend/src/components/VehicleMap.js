@@ -5,7 +5,7 @@ import 'leaflet/dist/leaflet.css';
 // Ícone padrão do Leaflet
 const defaultIcon = new L.Icon.Default();
 
-// Ícone de alfinete para pontos estacionários (className 'leaflet-div-icon' aplica o estilo correto)
+// Ícone de alfinete para pontos estacionários (usando emoji 🚗)
 const pinIcon = new L.DivIcon({
   html: '🚗',
   className: 'leaflet-div-icon',
@@ -20,18 +20,19 @@ export default function VehicleMap({ positions }) {
 
   return (
     <MapContainer center={coords[0]} zoom={13} style={{ height: '80vh' }}>
-      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"} />
 
       {/* Trajeto */}
       <Polyline positions={coords} />
 
       {positions.map((p, idx) => {
-        // Considere parado somente se speed === 0
-        const speed = typeof p.speed === 'number' ? p.speed : 0;
+        // speed e battery seguros
+        const speed   = typeof p.speed   === 'number' ? p.speed   : 0;
+        const battery = typeof p.battery === 'number' ? p.battery : null;
         const isStationary = speed === 0;
         const icon = isStationary ? pinIcon : defaultIcon;
 
-        // Data/hora
+        // Data/hora formatada
         const date = p.at ? new Date(p.at) : null;
         const timeStr = date && !isNaN(date)
           ? date.toLocaleTimeString()
@@ -45,7 +46,7 @@ export default function VehicleMap({ positions }) {
                 Latitude: {p.lat.toFixed(5)}<br/>
                 Longitude: {p.lng.toFixed(5)}<br/>
                 Velocidade: {speed.toFixed(1)} km/h<br/>
-                Bateria: {typeof p.bat === 'number' ? `${p.bat.toFixed(2)} V` : '—'}<br/>
+                Bateria: {battery !== null ? `${battery.toFixed(2)} V` : '—'}<br/>
                 Hora: {timeStr}<br/>
                 {isStationary && <strong>Estacionado aqui</strong>}
               </div>
@@ -61,9 +62,9 @@ export default function VehicleMap({ positions }) {
             <strong>Última Posição</strong><br/>
             {(() => {
               const last = positions[positions.length - 1];
-              const sp = typeof last.speed === 'number' ? last.speed : 0;
-              const bt = typeof last.bat === 'number' ? last.bat : null;
-              const dt = last.at ? new Date(last.at) : null;
+              const sp   = typeof last.speed   === 'number' ? last.speed   : 0;
+              const bt   = typeof last.battery === 'number' ? last.battery : null;
+              const dt   = last.at ? new Date(last.at) : null;
               return (
                 <>
                   Velocidade: {sp.toFixed(1)} km/h<br/>

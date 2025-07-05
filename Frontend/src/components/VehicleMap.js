@@ -5,7 +5,7 @@ import 'leaflet/dist/leaflet.css';
 // Ícone padrão do Leaflet
 const defaultIcon = new L.Icon.Default();
 
-// Ícone de alfinete para pontos estacionários (usando emoji 🚗)
+// Ícone de alfinete para pontos estacionários (emoji 🚗)
 const pinIcon = new L.DivIcon({
   html: '🚗',
   className: 'leaflet-div-icon',
@@ -20,7 +20,7 @@ export default function VehicleMap({ positions }) {
 
   return (
     <MapContainer center={coords[0]} zoom={13} style={{ height: '80vh' }}>
-      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"} />
+      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
       {/* Trajeto */}
       <Polyline positions={coords} />

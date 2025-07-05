@@ -5,7 +5,7 @@ import 'leaflet/dist/leaflet.css';
 // Ícones
 const defaultIcon = new L.Icon.Default();
 const pinIcon = new L.DivIcon({
-  html: '🛻',
+  html: '📌',
   className: '',
   iconSize: [24, 24],
   iconAnchor: [12, 24],

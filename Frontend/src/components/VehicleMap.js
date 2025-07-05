@@ -3,9 +3,8 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 // Ícone padrão do Leaflet
-const defaultIcon = new L.Icon.Default();
 
-// Ícone de alfinete para pontos estacionários (emoji 🚗)
+// Ícone de alfinete para pontos estacionários
 const pinIcon = new L.DivIcon({
   html: '🚗',
   className: 'leaflet-div-icon',
@@ -26,13 +25,11 @@ export default function VehicleMap({ positions }) {
       <Polyline positions={coords} />
 
       {positions.map((p, idx) => {
-        // speed e battery seguros
         const speed   = typeof p.speed   === 'number' ? p.speed   : 0;
         const battery = typeof p.battery === 'number' ? p.battery : null;
         const isStationary = speed === 0;
         const icon = isStationary ? pinIcon : defaultIcon;
 
-        // Data/hora formatada
         const date = p.at ? new Date(p.at) : null;
         const timeStr = date && !isNaN(date)
           ? date.toLocaleTimeString()
@@ -60,6 +57,8 @@ export default function VehicleMap({ positions }) {
         <Popup>
           <div>
             <strong>Última Posição</strong><br/>
+            Latitude: {positions[positions.length - 1].lat.toFixed(5)}<br/>
+            Longitude: {positions[positions.length - 1].lng.toFixed(5)}<br/>
             {(() => {
               const last = positions[positions.length - 1];
               const sp   = typeof last.speed   === 'number' ? last.speed   : 0;

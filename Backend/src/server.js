@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
-import http from 'http';
-import app from './app.js';
+import http    from 'http';
+import app     from './app.js';
 import { Server as IOServer } from 'socket.io';
 
 dotenv.config();
@@ -8,10 +8,9 @@ dotenv.config();
 const PORT = process.env.PORT || 5000;
 const server = http.createServer(app);
 
-// Configura Socket.IO
-export const io = new IOServer(server, {
-  cors: { origin: '*' }
-});
+// Configura Socket.IO e guarda em app para controllers acessarem
+const io = new IOServer(server, { cors: { origin: '*' } });
+app.set('io', io);
 
 io.on('connection', socket => {
   console.log('👤 Cliente Socket conectado:', socket.id);

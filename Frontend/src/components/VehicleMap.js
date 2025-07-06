@@ -43,7 +43,7 @@ export default function VehicleMap({ vehicleId }) {
 
   // 3) Subscreve Socket.IO após histórico carregado
   useEffect(() => {
-    if (!initial) return;
+    if (!initial) return;  // aguarda o histórico
 
     const socket = io(process.env.NEXT_PUBLIC_API);
     socket.emit('joinVehicle', vehicleId);
@@ -82,16 +82,26 @@ export default function VehicleMap({ vehicleId }) {
       style={{ height: '80vh' }}
     >
       <LayersControl position="topright">
-        {/* Camada padrão OpenStreetMap */}
+        {/* 1) Mapa Padrão (OpenStreetMap) */}
         <BaseLayer checked name="Mapa Padrão">
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         </BaseLayer>
 
-        {/* Camada de Satélite ESRI */}
+        {/* 2) Satélite (ESRI World Imagery) */}
         <BaseLayer name="Satélite (ESRI)">
           <TileLayer
             url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
             attribution="Tiles © Esri — Fonte: Esri, Maxar, Earthstar Geographics, and the GIS User Community"
+          />
+        </BaseLayer>
+
+        {/* 3) Satélite (Mapbox) */}
+        <BaseLayer name="Satélite (Mapbox)">
+          <TileLayer
+            url={`https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/{z}/{x}/{y}?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}`}
+            tileSize={512}
+            zoomOffset={-1}
+            attribution="© Mapbox"
           />
         </BaseLayer>
       </LayersControl>
@@ -99,6 +109,7 @@ export default function VehicleMap({ vehicleId }) {
       {/* Linha do trajecto */}
       <Polyline positions={coords} />
 
+      {/* Marcadores com popup */}
       {positions.map((p, idx) => {
         const speed   = typeof p.speed   === 'number' ? p.speed   : 0;
         const battery = typeof p.battery === 'number' ? p.battery : null;

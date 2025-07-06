@@ -43,7 +43,7 @@ export default function VehicleMap({ vehicleId }) {
 
   // 3) Subscreve Socket.IO após histórico carregado
   useEffect(() => {
-    if (!initial) return;  // aguarda o histórico
+    if (!initial) return;
 
     const socket = io(process.env.NEXT_PUBLIC_API);
     socket.emit('joinVehicle', vehicleId);
@@ -82,8 +82,8 @@ export default function VehicleMap({ vehicleId }) {
       style={{ height: '80vh' }}
     >
       <LayersControl position="topright">
-        {/* 1) Mapa Padrão (OpenStreetMap) */}
-        <BaseLayer checked name="Mapa Padrão">
+        {/* 1) Mapa Padrão (OSM) */}
+        <BaseLayer checked name="OSM">
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         </BaseLayer>
 
@@ -95,13 +95,27 @@ export default function VehicleMap({ vehicleId }) {
           />
         </BaseLayer>
 
-        {/* 3) Satélite (Mapbox) */}
-        <BaseLayer name="Satélite (Mapbox)">
+        {/* 3) Stamen Terrain */}
+        <BaseLayer name="Stamen Terrain">
           <TileLayer
-            url={`https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/{z}/{x}/{y}?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}`}
-            tileSize={512}
-            zoomOffset={-1}
-            attribution="© Mapbox"
+            url="https://stamen-tiles.a.ssl.fastly.net/terrain/{z}/{x}/{y}.jpg"
+            attribution='Map tiles by <a href="http://stamen.com">Stamen Design</a>, under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>; Data © <a href="http://openstreetmap.org">OSM</a>'
+          />
+        </BaseLayer>
+
+        {/* 4) Stamen Toner */}
+        <BaseLayer name="Stamen Toner">
+          <TileLayer
+            url="https://stamen-tiles.a.ssl.fastly.net/toner/{z}/{x}/{y}.png"
+            attribution='Map tiles by <a href="http://stamen.com">Stamen Design</a>, under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>; Data © <a href="http://openstreetmap.org">OSM</a>'
+          />
+        </BaseLayer>
+
+        {/* 5) CartoDB Positron */}
+        <BaseLayer name="CartoDB Positron">
+          <TileLayer
+            url="https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png"
+            attribution='© <a href="https://www.openstreetmap.org/">OSM</a> contributors, © <a href="https://carto.com/">CARTO</a>'
           />
         </BaseLayer>
       </LayersControl>

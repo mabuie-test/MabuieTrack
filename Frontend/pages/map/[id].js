@@ -20,11 +20,9 @@ export default function MapPage() {
 
   return (
     <div style={{ padding: '1rem' }}>
-      <h1>Rastreamento Diário</h1>
+      <h1>Rastreamento </h1>
       <VehicleMap vehicleId={vehicleId} />
-
       <VehicleControls vehicleId={vehicleId} />
-
       {user?.role === 'admin' && (
         <>
           <h2>Definir Área de Circulação</h2>

@@ -7,14 +7,34 @@ import { authenticateJWT } from '../middlewares/authenticateJWT.js';
 import { authorizeRoles }  from '../middlewares/authorizeRoles.js';
 import { restrictVehicle } from '../middlewares/restrictVehicle.js';
 import Vehicle             from '../models/Vehicle.js';
-import { io }              from '../server.js';   // importar io
+import { io }              from '../server.js';
+
+import turfBoolean         from '@turf/boolean-point-in-polygon';
+import { point as turfPoint, polygon as turfPolygon } from '@turf/helpers';
 
 const r = Router();
 
 // Todas as rotas exigem token
 r.use(authenticateJWT);
 
-// POST /:id/telemetry – recebe telemetria e emite via WebSocket
+// 1) Definir/atualizar Geofence (admin)
+r.post(
+  '/:id/geofence',
+  authorizeRoles('admin'),
+  async (req, res) => {
+    const { id } = req.params;
+    const { coordinates } = req.body; // array de [lng, lat]
+    const v = await Vehicle.findByIdAndUpdate(
+      id,
+      { geofence: { type: 'Polygon', coordinates: [coordinates] } },
+      { new: true }
+    );
+    if (!v) return res.sendStatus(404);
+    return res.json({ message: 'Geofence atualizado', geofence: v.geofence });
+  }
+);
+
+// 2) Envio de telemetria, emissão de Socket.IO e verificação de geofence
 r.post(
   '/:id/telemetry',
   authorizeRoles('admin','user'),
@@ -29,17 +49,24 @@ r.post(
     v.telemetry.push(point);
     await v.save();
 
-    // Emite apenas para quem entrou na sala deste veículo
     io.to(`vehicle_${id}`).emit('newTelemetry', { vehicleId: id, point });
+
+    // Geofence: se definido e o ponto estiver fora
+    if (v.geofence?.coordinates?.length) {
+      const inside = turfBoolean(
+        turfPoint([lng, lat]),
+        turfPolygon(v.geofence.coordinates)
+      );
+      if (!inside) {
+        io.to(`vehicle_${id}`).emit('geofenceViolation', { vehicleId: id });
+      }
+    }
 
     return res.json({ ok: true });
   }
 );
 
-// GET / – listagem
-r.get('/', authorizeRoles('admin','user'), listVehicles);
-
-// GET /:id/history – histórico estático inicial
+// 3) Histórico estático inicial
 r.get(
   '/:id/history',
   authorizeRoles('admin','user'),
@@ -47,8 +74,8 @@ r.get(
   async (req, res) => {
     const { id } = req.params;
     const { range = 'day' } = req.query;
-    const multipliers = { day: 1, week: 7, month: 30 };
-    const cutoff = new Date(Date.now() - multipliers[range] * 24*3600*1000);
+    const multipliers = { day:1, week:7, month:30 };
+    const cutoff = new Date(Date.now() - multipliers[range]*24*3600*1000);
     const v = await Vehicle.findById(id);
     if (!v) return res.sendStatus(404);
     const hist = v.telemetry.filter(t => t.at >= cutoff);
@@ -56,7 +83,42 @@ r.get(
   }
 );
 
-// CRUD de veículos (admin)
+// 4) Engine‑kill (admin ou user)
+r.post(
+  '/:id/engine-kill',
+  authorizeRoles('admin','user'),
+  restrictVehicle,
+  async (req, res) => {
+    const { id } = req.params;
+    const v = await Vehicle.findById(id);
+    if (!v) return res.sendStatus(404);
+
+    // criar comando que o firmware vai buscar
+    // aqui só emitimos o evento de status
+    io.to(`vehicle_${id}`).emit('engineStatus', { vehicleId: id, status: 'disabled' });
+    return res.json({ message: 'Comando de corte enfileirado' });
+  }
+);
+
+// 5) Engine‑enable (admin ou user)
+r.post(
+  '/:id/engine-enable',
+  authorizeRoles('admin','user'),
+  restrictVehicle,
+  async (req, res) => {
+    const { id } = req.params;
+    const v = await Vehicle.findById(id);
+    if (!v) return res.sendStatus(404);
+
+    io.to(`vehicle_${id}`).emit('engineStatus', { vehicleId: id, status: 'enabled' });
+    return res.json({ message: 'Comando de habilitação enfileirado' });
+  }
+);
+
+// 6) Listagem de veículos
+r.get('/', authorizeRoles('admin','user'), listVehicles);
+
+// 7) CRUD de veículos (admin)
 r.post('/', authorizeRoles('admin'), createVehicle);
 r.put('/:id', authorizeRoles('admin'), updateVehicle);
 r.delete('/:id', authorizeRoles('admin'), deleteVehicle);

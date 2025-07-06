@@ -2,12 +2,20 @@ import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import io from 'socket.io-client';
 import {
-  MapContainer, TileLayer, Marker, Popup, Polyline
+  MapContainer,
+  LayersControl,
+  TileLayer,
+  Marker,
+  Popup,
+  Polyline
 } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import api from '../api';
 
+const { BaseLayer } = LayersControl;
+
+// Ícone de carro para todos os pontos
 const carIcon = new L.DivIcon({
   html: '🚗',
   className: 'leaflet-div-icon',
@@ -19,7 +27,7 @@ const carIcon = new L.DivIcon({
 const fetcher = url => api.get(url).then(r => r.data);
 
 export default function VehicleMap({ vehicleId }) {
-  // 1) Historico inicial via SWR
+  // 1) Histórico inicial via SWR
   const { data: initial, error } = useSWR(
     () => `/vehicles/${vehicleId}/history?range=day`,
     fetcher
@@ -35,10 +43,9 @@ export default function VehicleMap({ vehicleId }) {
 
   // 3) Subscreve Socket.IO após histórico carregado
   useEffect(() => {
-    if (!initial) return;  // aguarda o histórico
+    if (!initial) return;
 
     const socket = io(process.env.NEXT_PUBLIC_API);
-
     socket.emit('joinVehicle', vehicleId);
 
     socket.on('newTelemetry', ({ vehicleId: vid, point }) => {
@@ -69,9 +76,29 @@ export default function VehicleMap({ vehicleId }) {
   const coords = positions.map(p => [p.lat, p.lng]);
 
   return (
-    <MapContainer center={coords[coords.length - 1]} zoom={13} style={{ height: '80vh' }}>
-      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+    <MapContainer
+      center={coords[coords.length - 1]}
+      zoom={13}
+      style={{ height: '80vh' }}
+    >
+      <LayersControl position="topright">
+        {/* Camada padrão OpenStreetMap */}
+        <BaseLayer checked name="Mapa Padrão">
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        </BaseLayer>
+
+        {/* Camada de Satélite ESRI */}
+        <BaseLayer name="Satélite (ESRI)">
+          <TileLayer
+            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+            attribution="Tiles © Esri — Fonte: Esri, Maxar, Earthstar Geographics, and the GIS User Community"
+          />
+        </BaseLayer>
+      </LayersControl>
+
+      {/* Linha do trajecto */}
       <Polyline positions={coords} />
+
       {positions.map((p, idx) => {
         const speed   = typeof p.speed   === 'number' ? p.speed   : 0;
         const battery = typeof p.battery === 'number' ? p.battery : null;
@@ -81,7 +108,11 @@ export default function VehicleMap({ vehicleId }) {
           : '—';
 
         return (
-          <Marker key={idx} position={[p.lat, p.lng]} icon={carIcon}>
+          <Marker
+            key={idx}
+            position={[p.lat, p.lng]}
+            icon={carIcon}
+          >
             <Popup>
               <strong>Ponto {idx + 1}</strong><br/>
               Latitude: {p.lat.toFixed(5)}<br/>

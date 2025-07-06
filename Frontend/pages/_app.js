@@ -1,12 +1,13 @@
-import { AuthProvider } from '../src/contexts/AuthContext';
-import 'leaflet/dist/leaflet.css';
+// pages/_app.js
+import 'leaflet/dist/leaflet.css';        // CSS do Leaflet
+import 'leaflet-draw/dist/leaflet.draw.css'; // CSS do Leaflet-Draw
 
-function MyApp({ Component, pageProps }) {
+import { AuthProvider } from '../src/contexts/AuthContext';
+
+export default function MyApp({ Component, pageProps }) {
   return (
     <AuthProvider>
       <Component {...pageProps} />
     </AuthProvider>
   );
 }
-
-export default MyApp;

@@ -2,11 +2,12 @@
   "name": "vehicle-frontend",
   "version": "1.0.0",
   "private": true,
-  "scripts": {
-    "dev":    "next dev -p 3000",
-    "build":  "next build",
-    "export": "next build && next export"
-  },
+
+ "scripts": {
+   "dev":    "next dev -p 3000",
+   "build":  "next build",
+   "start":  "next start -p 3000"
+ },
   "dependencies": {
     "axios":               "^1.4.0",
     "leaflet":             "^1.9.3",

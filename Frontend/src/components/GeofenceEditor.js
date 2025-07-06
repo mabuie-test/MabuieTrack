@@ -1,18 +1,26 @@
+import dynamic from 'next/dynamic';
 import { MapContainer, TileLayer, FeatureGroup } from 'react-leaflet';
-import { EditControl } from 'react-leaflet-draw';
-import 'leaflet/dist/leaflet.css';
-import 'leaflet-draw/dist/leaflet.draw.css';
-import api from '../api';
+import api from '../api';  // Ajuste aqui: certifique‑se de que este caminho está correto
+
+// Carrega o EditControl apenas no cliente para evitar SSR
+const EditControl = dynamic(
+  () => import('react-leaflet-draw').then(mod => mod.EditControl),
+  { ssr: false }
+);
 
 export default function GeofenceEditor({ vehicleId, initialGeo }) {
-  // centro e zoom padrão (ajuste conforme necessário)
+  // Defina um centro e zoom padrão
   const center = initialGeo
     ? [initialGeo.coordinates[0][0][1], initialGeo.coordinates[0][0][0]]
     : [0, 0];
   const zoom = initialGeo ? 13 : 2;
 
   return (
-    <MapContainer center={center} zoom={zoom} style={{ height: '400px', marginBottom: '1rem' }}>
+    <MapContainer
+      center={center}
+      zoom={zoom}
+      style={{ height: '400px', marginBottom: '1rem' }}
+    >
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
       <FeatureGroup>
@@ -24,15 +32,15 @@ export default function GeofenceEditor({ vehicleId, initialGeo }) {
             alert('Geofence guardado!');
           }}
           draw={{
-            rectangle: false,
-            polyline:  false,
-            marker:    false,
-            circle:    false,
+            rectangle:    false,
+            polyline:     false,
+            marker:       false,
+            circle:       false,
             circlemarker: false
           }}
           edit={{
-            remove: true,
-            edit:   true
+            edit:   true,
+            remove: true
           }}
         />
       </FeatureGroup>

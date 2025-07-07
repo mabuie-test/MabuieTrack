@@ -3,12 +3,21 @@ import { useContext } from 'react';
 import { AuthContext } from '../../src/contexts/AuthContext';
 import VehicleControls from '../../src/components/VehicleControls';
 
-// Carrega componentes que usam Leaflet apenas no cliente
+// Dynamic imports (client‑only)
 const VehicleMap     = dynamic(() => import('../../src/components/VehicleMap'),   { ssr: false });
 const GeofenceEditor = dynamic(() => import('../../src/components/GeofenceEditor'), { ssr: false });
 
-export default function MapPage({ vehicleId, initialGeo }) {
+export default function MapPage({ vehicleId, initialGeo, fetchError }) {
   const { user } = useContext(AuthContext);
+
+  if (fetchError) {
+    return (
+      <div style={{ padding:'1rem', color:'red' }}>
+        <h1>Erro ao carregar dados do veículo</h1>
+        <pre>{fetchError}</pre>
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: '1rem' }}>
@@ -27,25 +36,36 @@ export default function MapPage({ vehicleId, initialGeo }) {
   );
 }
 
-// SSR para rotas dinâmicas, com fallback de variáveis de ambiente
 export async function getServerSideProps({ params }) {
-  // Primeiro tenta API_URL (SSR), depois NEXT_PUBLIC_API (fallback), depois localhost
   const base = process.env.API_URL
             || process.env.NEXT_PUBLIC_API
             || 'http://localhost:5000';
 
-  const res = await fetch(`${base}/api/vehicles/${params.id}`);
-  if (res.status === 404) {
-    return { notFound: true };
-  }
-  if (!res.ok) {
-    throw new Error(`Erro ao buscar veículo: ${res.status}`);
-  }
-  const vehicle = await res.json();
-  return {
-    props: {
-      vehicleId:  params.id,
-      initialGeo: vehicle.geofence || null
+  try {
+    const res = await fetch(`${base}/api/vehicles/${params.id}`);
+    if (res.status === 404) {
+      return { notFound: true };
     }
-  };
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Status ${res.status}: ${text}`);
+    }
+    const vehicle = await res.json();
+    return {
+      props: {
+        vehicleId:  params.id,
+        initialGeo: vehicle.geofence || null,
+        fetchError: null
+      }
+    };
+  } catch (err) {
+    console.error('Erro em getServerSideProps /map/[id]:', err);
+    return {
+      props: {
+        vehicleId:  params.id,
+        initialGeo: null,
+        fetchError: err.message
+      }
+    };
+  }
 }

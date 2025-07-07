@@ -3,7 +3,7 @@ import { useContext } from 'react';
 import { AuthContext } from '../../src/contexts/AuthContext';
 import VehicleControls from '../../src/components/VehicleControls';
 
-// Carrega os componentes que usam Leaflet apenas no cliente
+// Carrega componentes que usam Leaflet apenas no cliente
 const VehicleMap     = dynamic(() => import('../../src/components/VehicleMap'),   { ssr: false });
 const GeofenceEditor = dynamic(() => import('../../src/components/GeofenceEditor'), { ssr: false });
 
@@ -27,10 +27,14 @@ export default function MapPage({ vehicleId, initialGeo }) {
   );
 }
 
-// SSR para rotas dinâmicas, usando API_URL no servidor
+// SSR para rotas dinâmicas, com fallback de variáveis de ambiente
 export async function getServerSideProps({ params }) {
-  const API_URL = process.env.API_URL;  // Definida no painel do Render
-  const res = await fetch(`${API_URL}/api/vehicles/${params.id}`);
+  // Primeiro tenta API_URL (SSR), depois NEXT_PUBLIC_API (fallback), depois localhost
+  const base = process.env.API_URL
+            || process.env.NEXT_PUBLIC_API
+            || 'http://localhost:5000';
+
+  const res = await fetch(`${base}/api/vehicles/${params.id}`);
   if (res.status === 404) {
     return { notFound: true };
   }

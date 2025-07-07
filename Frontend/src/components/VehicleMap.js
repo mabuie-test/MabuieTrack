@@ -84,7 +84,7 @@ export default function VehicleMap({ vehicleId }) {
       <LayersControl position="topright">
         {/* 1) Mapa Padrão (OSM) */}
         <BaseLayer checked name="OSM">
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"} />
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         </BaseLayer>
 
         {/* 2) Satélite (ESRI World Imagery) */}

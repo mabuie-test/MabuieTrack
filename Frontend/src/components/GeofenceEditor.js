@@ -1,36 +1,22 @@
-import dynamic from 'next/dynamic';
+import React from 'react';
 import { MapContainer, TileLayer, FeatureGroup } from 'react-leaflet';
-import api from '../api';  // Ajuste aqui: certifique‑se de que este caminho está correto
-
-// Carrega o EditControl apenas no cliente para evitar SSR
-const EditControl = dynamic(
-  () => import('react-leaflet-draw').then(mod => mod.EditControl),
-  { ssr: false }
-);
+import { EditControl }                         from 'react-leaflet-draw';
+import api                                     from '../api';
 
 export default function GeofenceEditor({ vehicleId, initialGeo }) {
-  // Defina um centro e zoom padrão
+  // Se existir um geofence, centraliza nele
   const center = initialGeo
     ? [initialGeo.coordinates[0][0][1], initialGeo.coordinates[0][0][0]]
     : [0, 0];
   const zoom = initialGeo ? 13 : 2;
 
   return (
-    <MapContainer
-      center={center}
-      zoom={zoom}
-      style={{ height: '400px', marginBottom: '1rem' }}
-    >
+    <MapContainer center={center} zoom={zoom} style={{ height: '400px', margin: '1rem 0' }}>
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
       <FeatureGroup>
         <EditControl
           position="topright"
-          onCreated={e => {
-            const coords = e.layer.getLatLngs()[0].map(p => [p.lng, p.lat]);
-            api.post(`/vehicles/${vehicleId}/geofence`, { coordinates: coords });
-            alert('Geofence guardado!');
-          }}
           draw={{
             rectangle:    false,
             polyline:     false,
@@ -38,9 +24,22 @@ export default function GeofenceEditor({ vehicleId, initialGeo }) {
             circle:       false,
             circlemarker: false
           }}
-          edit={{
-            edit:   true,
-            remove: true
+          edit={{ edit: true, remove: true }}
+          onCreated={e => {
+            const coords = e.layer.getLatLngs()[0].map(p => [p.lng, p.lat]);
+            api.post(`/vehicles/${vehicleId}/geofence`, { coordinates: coords });
+            alert('Geofence guardado!');
+          }}
+          onEdited={e => {
+            const layer = e.layers.getLayers()[0];
+            const coords = layer.getLatLngs()[0].map(p => [p.lng, p.lat]);
+            api.post(`/vehicles/${vehicleId}/geofence`, { coordinates: coords });
+            alert('Geofence actualizado!');
+          }}
+          onDeleted={e => {
+            // Apaga o geofence no backend
+            api.post(`/vehicles/${vehicleId}/geofence`, { coordinates: [] });
+            alert('Geofence removido!');
           }}
         />
       </FeatureGroup>

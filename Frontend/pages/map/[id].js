@@ -2,11 +2,14 @@ import dynamic from 'next/dynamic';
 import { useContext } from 'react';
 import { AuthContext } from '../../src/contexts/AuthContext';
 import VehicleControls from '../../src/components/VehicleControls';
-import GeofenceEditor  from '../../src/components/GeofenceEditor';
 
-// Carrega o mapa apenas no cliente
+// Dynamic import para evitar SSR de qualquer módulo Leaflet
 const VehicleMap = dynamic(
   () => import('../../src/components/VehicleMap'),
+  { ssr: false }
+);
+const GeofenceEditor = dynamic(
+  () => import('../../src/components/GeofenceEditor'),
   { ssr: false }
 );
 
@@ -28,12 +31,10 @@ export default function MapPage({ vehicleId }) {
   );
 }
 
-// Esta função roda sempre no servidor e garante SSR para rotas dinâmicas
+// SSR para rotas dinâmicas, sem expor Leaflet ao servidor
 export async function getServerSideProps(context) {
   const { id } = context.params;
   return {
-    props: {
-      vehicleId: id
-    }
+    props: { vehicleId: id }
   };
 }

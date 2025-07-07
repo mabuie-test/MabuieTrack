@@ -91,7 +91,7 @@ export default function VehicleMap({ vehicleId }) {
         <BaseLayer name="Satélite (ESRI)">
           <TileLayer
             url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-            
+          />
         </BaseLayer>
 
         {/* 3) Stamen Terrain */}

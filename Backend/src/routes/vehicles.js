@@ -7,7 +7,6 @@ import { authenticateJWT } from '../middlewares/authenticateJWT.js';
 import { authorizeRoles }  from '../middlewares/authorizeRoles.js';
 import { restrictVehicle } from '../middlewares/restrictVehicle.js';
 import Vehicle             from '../models/Vehicle.js';
-import { io }              from '../server.js';
 
 import turfBoolean         from '@turf/boolean-point-in-polygon';
 import { point as turfPoint, polygon as turfPolygon } from '@turf/helpers';
@@ -49,6 +48,8 @@ r.post(
     v.telemetry.push(point);
     await v.save();
 
+    // Obtém a instância do Socket.IO
+    const io = req.app.get('io');
     io.to(`vehicle_${id}`).emit('newTelemetry', { vehicleId: id, point });
 
     // Geofence: se definido e o ponto estiver fora
@@ -93,8 +94,7 @@ r.post(
     const v = await Vehicle.findById(id);
     if (!v) return res.sendStatus(404);
 
-    // criar comando que o firmware vai buscar
-    // aqui só emitimos o evento de status
+    const io = req.app.get('io');
     io.to(`vehicle_${id}`).emit('engineStatus', { vehicleId: id, status: 'disabled' });
     return res.json({ message: 'Comando de corte enfileirado' });
   }
@@ -110,6 +110,7 @@ r.post(
     const v = await Vehicle.findById(id);
     if (!v) return res.sendStatus(404);
 
+    const io = req.app.get('io');
     io.to(`vehicle_${id}`).emit('engineStatus', { vehicleId: id, status: 'enabled' });
     return res.json({ message: 'Comando de habilitação enfileirado' });
   }

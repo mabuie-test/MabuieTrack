@@ -84,7 +84,7 @@ export default function VehicleMap({ vehicleId }) {
       <LayersControl position="topright">
         {/* 1) Mapa Padrão (OSM) */}
         <BaseLayer checked name="OSM">
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"} />
         </BaseLayer>
 
         {/* 2) Satélite (ESRI World Imagery) */}
@@ -99,7 +99,7 @@ export default function VehicleMap({ vehicleId }) {
         <BaseLayer name="Stamen Terrain">
           <TileLayer
             url="https://stamen-tiles.a.ssl.fastly.net/terrain/{z}/{x}/{y}.jpg"
-            attribution='Map tiles by <a href="http://stamen.com">Stamen Design</a>, under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>; Data © <a href="http://openstreetmap.org">OSM</a>'
+            attribution='Map tiles by <a href="http://stamen.com">Stamen Design</a>, CC BY 3.0; Data © <a href="http://openstreetmap.org">OSM</a>'
           />
         </BaseLayer>
 
@@ -107,7 +107,7 @@ export default function VehicleMap({ vehicleId }) {
         <BaseLayer name="Stamen Toner">
           <TileLayer
             url="https://stamen-tiles.a.ssl.fastly.net/toner/{z}/{x}/{y}.png"
-            attribution='Map tiles by <a href="http://stamen.com">Stamen Design</a>, under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>; Data © <a href="http://openstreetmap.org">OSM</a>'
+            attribution='Map tiles by <a href="http://stamen.com">Stamen Design</a>, CC BY 3.0; Data © <a href="http://openstreetmap.org">OSM</a>'
           />
         </BaseLayer>
 

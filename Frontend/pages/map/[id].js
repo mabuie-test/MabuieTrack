@@ -27,19 +27,21 @@ export default function MapPage({ vehicleId, initialGeo }) {
   );
 }
 
-// Garante que o Next.js não tenta exportar esta rota como estática
+// SSR para rotas dinâmicas, usando API_URL no servidor
 export async function getServerSideProps({ params }) {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API}/api/vehicles/${params.id}`
-  );
-  if (!res.ok) {
+  const API_URL = process.env.API_URL;  // Definida no painel do Render
+  const res = await fetch(`${API_URL}/api/vehicles/${params.id}`);
+  if (res.status === 404) {
     return { notFound: true };
+  }
+  if (!res.ok) {
+    throw new Error(`Erro ao buscar veículo: ${res.status}`);
   }
   const vehicle = await res.json();
   return {
     props: {
-      vehicleId:    params.id,
-      initialGeo:   vehicle.geofence || null
+      vehicleId:  params.id,
+      initialGeo: vehicle.geofence || null
     }
   };
 }

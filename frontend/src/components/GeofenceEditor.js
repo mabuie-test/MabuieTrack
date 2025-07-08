@@ -55,7 +55,7 @@ export default function GeofenceEditor({ vehicleId, initialGeo }) {
           onDeleted={e => {
             api.post(`/vehicles/${vehicleId}/geofence`, { coordinates: [] });
             alert('Geofence removido!');
-          }}
+          }
         />
       </FeatureGroup>
     </MapContainer>

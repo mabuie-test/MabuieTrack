@@ -1,3 +1,4 @@
+// pages/map/[id].js
 import { useState, useEffect, useContext } from 'react';
 import { useRouter }                      from 'next/router';
 import dynamic                            from 'next/dynamic';
@@ -5,13 +6,14 @@ import { AuthContext }                    from '../../src/contexts/AuthContext';
 import VehicleControls                    from '../../src/components/VehicleControls';
 import api                                from '../../src/api';
 
+// Carrega o mapa e o editor de geofence apenas no cliente
 const VehicleMap     = dynamic(() => import('../../src/components/VehicleMap'),   { ssr: false });
 const GeofenceEditor = dynamic(() => import('../../src/components/GeofenceEditor'), { ssr: false });
 
 export default function MapPage() {
-  const { query } = useRouter();
-  const vehicleId  = query.id;
-  const { user }   = useContext(AuthContext);
+  const { query }   = useRouter();
+  const vehicleId   = query.id;
+  const { user }    = useContext(AuthContext);
 
   const [initialGeo, setInitialGeo] = useState(null);
   const [loadingGeo, setLoadingGeo] = useState(false);
@@ -46,9 +48,10 @@ export default function MapPage() {
 
       <VehicleControls vehicleId={vehicleId} />
 
-      {/* Para debug: revele o papel do utilizador */}
+      {/* Debug: mostra o papel atual */}
       <p>Role atual: <strong>{user?.role}</strong></p>
 
+      {/* Só o admin vê o geofence editor */}
       {user?.role === 'admin' && (
         <>
           <h2>Definir Área de Circulação</h2>

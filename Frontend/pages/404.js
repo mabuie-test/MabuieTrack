@@ -7,8 +7,3 @@ export default function Custom404() {
     </div>
   );
 }
-
-// Força SSR, impedindo o export estático
-export async function getServerSideProps() {
-  return { props: {} };
-}

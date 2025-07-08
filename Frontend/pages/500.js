@@ -7,8 +7,3 @@ export default function Custom500() {
     </div>
   );
 }
-
-// Força SSR
-export async function getServerSideProps() {
-  return { props: {} };
-}

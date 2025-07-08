@@ -68,3 +68,7 @@ export default function VehiclesPage() {
     </div>
   );
 }
+// Força SSR nesta rota dinâmica
+export async function getServerSideProps() {
+  return { props: {} };
+              }

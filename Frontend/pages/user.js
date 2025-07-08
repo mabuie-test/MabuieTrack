@@ -27,3 +27,8 @@ export default function UserPage() {
     </div>
   );
 }
+
+// Força SSR nesta rota dinâmica
+export async function getServerSideProps() {
+  return { props: {} };
+}

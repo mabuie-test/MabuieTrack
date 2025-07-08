@@ -1,3 +1,4 @@
+// pages/user.js
 import useSWR from 'swr';
 import api from '../src/api';
 import { useContext } from 'react';
@@ -6,7 +7,10 @@ import { AuthContext } from '../src/contexts/AuthContext';
 
 export default function UserPage() {
   const { logout } = useContext(AuthContext);
-  const { data: vehicles } = useSWR('/vehicles', () => api.get('/vehicles').then(r=>r.data));
+  const { data: vehicles } = useSWR(
+    '/vehicles',
+    () => api.get('/vehicles').then(r => r.data)
+  );
 
   if (!vehicles) return <p>Carregando…</p>;
   return (
@@ -14,7 +18,7 @@ export default function UserPage() {
       <h1>Meus Veículos</h1>
       <button onClick={logout}>Sair</button>
       <ul>
-        {vehicles.map(v=>(
+        {vehicles.map(v => (
           <li key={v._id}>
             {v.plate} — <Link href={`/map/${v._id}`}>Mapa</Link>
           </li>

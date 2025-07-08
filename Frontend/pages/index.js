@@ -17,3 +17,7 @@ export default function Home() {
     ? <AdminDashboard />
     : <UserDashboard />;
 }
+// Força SSR
+export async function getServerSideProps() {
+ return { props: {} };
+}

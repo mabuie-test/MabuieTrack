@@ -6,38 +6,41 @@ import { AuthContext }                      from '../../src/contexts/AuthContext
 import VehicleControls                      from '../../src/components/VehicleControls';
 import api                                  from '../../src/api';
 
-// Dynamic imports (client‑only)
 const VehicleMap     = dynamic(() => import('../../src/components/VehicleMap'),   { ssr: false });
 const GeofenceEditor = dynamic(() => import('../../src/components/GeofenceEditor'), { ssr: false });
 
 export default function MapPage() {
-  const { query }     = useRouter();
-  const vehicleId     = query.id;
-  const { token, user } = useContext(AuthContext);
+  const { query } = useRouter();
+  const vehicleId  = query.id;
+  const { user }   = useContext(AuthContext);
 
   const [initialGeo, setInitialGeo] = useState(null);
-  const [loadingGeo, setLoadingGeo] = useState(true);
+  const [loadingGeo, setLoadingGeo] = useState(false);
   const [errorGeo, setErrorGeo]     = useState(null);
 
   useEffect(() => {
-    if (!vehicleId || !token) return;
+    if (!vehicleId) return;
 
     setLoadingGeo(true);
+    setErrorGeo(null);
+
     api.get(`/vehicles/${vehicleId}`)
       .then(({ data: vehicle }) => {
         setInitialGeo(vehicle.geofence || null);
-        setLoadingGeo(false);
       })
       .catch(err => {
-        console.error('Erro ao buscar veículo:', err);
+        console.error('Erro ao buscar geofence:', err);
+        // mostra mensagem de erro; remove Loading
         setErrorGeo(err.response?.data?.message || err.message);
+      })
+      .finally(() => {
         setLoadingGeo(false);
       });
-  }, [vehicleId, token]);
+  }, [vehicleId]);
 
-  if (!vehicleId)       return <p>Carregando…</p>;
-  if (loadingGeo)       return <p>Carregando área de circulação…</p>;
-  if (errorGeo)         return <p style={{ color: 'red' }}>Erro: {errorGeo}</p>;
+  if (!vehicleId) return <p>Carregando…</p>;
+  if (loadingGeo) return <p>Carregando área de circulação…</p>;
+  if (errorGeo)   return <p style={{ color: 'red' }}>Erro: {errorGeo}</p>;
 
   return (
     <div style={{ padding: '1rem' }}>
@@ -50,10 +53,7 @@ export default function MapPage() {
       {user?.role === 'admin' && (
         <>
           <h2>Definir Área de Circulação</h2>
-          <GeofenceEditor
-            vehicleId={vehicleId}
-            initialGeo={initialGeo}
-          />
+          <GeofenceEditor vehicleId={vehicleId} initialGeo={initialGeo} />
         </>
       )}
     </div>

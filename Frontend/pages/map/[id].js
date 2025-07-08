@@ -61,3 +61,8 @@ export default function MapPage() {
     </div>
   );
 }
+
+// Força SSR nesta rota dinâmica
+export async function getServerSideProps() {
+  return { props: {} };
+}

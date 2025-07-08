@@ -16,3 +16,7 @@ export default function AdminDashboard() {
     </div>
   );
 }
+// Força SSR nesta rota dinâmica
+export async function getServerSideProps() {
+  return { props: {} };
+}

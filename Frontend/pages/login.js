@@ -35,3 +35,7 @@ export default function LoginPage() {
     </div>
   );
 }
+// Força SSR nesta rota dinâmica
+export async function getServerSideProps() {
+  return { props: {} };
+    }

@@ -9,13 +9,11 @@ import api                                     from '../api';
 export default function GeofenceEditor({ vehicleId, initialGeo }) {
   const fgRef = useRef();
 
-  // Quando receber initialGeo, desenhar o polígono existente
+  // Quando inicialGeo mudar, desenha o polígono existente
   useEffect(() => {
     if (initialGeo && fgRef.current) {
-      const layer = fgRef.current._layers;
-      // Limpa camadas antigas
-      Object.values(layer).forEach(l => fgRef.current.removeLayer(l));
-      // Desenha novo
+      const layers = fgRef.current._layers;
+      Object.values(layers).forEach(layer => fgRef.current.removeLayer(layer));
       const coords = initialGeo.coordinates[0].map(([lng, lat]) => [lat, lng]);
       const polygon = window.L.polygon(coords);
       fgRef.current.addLayer(polygon);
@@ -23,13 +21,15 @@ export default function GeofenceEditor({ vehicleId, initialGeo }) {
   }, [initialGeo]);
 
   const center = initialGeo
-    ? [ initialGeo.coordinates[0][0][1], initialGeo.coordinates[0][0][0] ]
+    ? [initialGeo.coordinates[0][0][1], initialGeo.coordinates[0][0][0]]
     : [0, 0];
   const zoom = initialGeo ? 13 : 2;
 
   return (
     <MapContainer center={center} zoom={zoom} style={{ height: '400px', margin: '1rem 0' }}>
-      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"} />
+      {/* Linha correta sem chave extra */}
+      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+
       <FeatureGroup ref={fgRef}>
         <EditControl
           position="topright"
@@ -38,7 +38,7 @@ export default function GeofenceEditor({ vehicleId, initialGeo }) {
             polyline:     false,
             marker:       false,
             circle:       false,
-            circlemarker: false,
+            circlemarker: false
           }}
           edit={{ edit: true, remove: true }}
           onCreated={e => {
@@ -55,7 +55,7 @@ export default function GeofenceEditor({ vehicleId, initialGeo }) {
           onDeleted={e => {
             api.post(`/vehicles/${vehicleId}/geofence`, { coordinates: [] });
             alert('Geofence removido!');
-          }
+          }}
         />
       </FeatureGroup>
     </MapContainer>

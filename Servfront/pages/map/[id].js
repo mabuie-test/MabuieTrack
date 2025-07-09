@@ -6,8 +6,10 @@ import { AuthContext }                      from '../../src/contexts/AuthContext
 import VehicleControls                      from '../../src/components/VehicleControls';
 import api                                  from '../../src/api';
 
-const VehicleMap     = dynamic(() => import('../../src/components/VehicleMap'),   { ssr: false });
-const GeofenceEditor = dynamic(() => import('../../src/components/GeofenceEditor'), { ssr: false });
+// Importamos só no cliente (evita “window is not defined” no SSR)
+const VehicleMap     = dynamic(() => import('../../src/components/VehicleMap'),    { ssr: false });
+const GeofenceEditor = dynamic(() => import('../../src/components/GeofenceEditor'),  { ssr: false });
+const VideoStream    = dynamic(() => import('../../src/components/VideoStream'),     { ssr: false });
 
 export default function MapPage() {
   const { query } = useRouter();
@@ -30,7 +32,6 @@ export default function MapPage() {
       })
       .catch(err => {
         console.error('Erro ao buscar geofence:', err);
-        // mostra mensagem de erro; remove Loading
         setErrorGeo(err.response?.data?.message || err.message);
       })
       .finally(() => {
@@ -43,16 +44,22 @@ export default function MapPage() {
   if (errorGeo)   return <p style={{ color: 'red' }}>Erro: {errorGeo}</p>;
 
   return (
-    <div style={{ padding: '1rem' }}>
-      <h1>Rastreamento Diário</h1>
+    <div className="p-4">
+      <h1 className="text-2xl font-bold mb-4">Rastreamento Diário</h1>
 
+      {/* Mapa com telemetria e geofence */}
       <VehicleMap vehicleId={vehicleId} />
 
+      {/* Botões de corte/habilitação de bomba */}
       <VehicleControls vehicleId={vehicleId} />
 
+      {/* Stream de vídeo HLS em tempo real */}
+      <VideoStream vehicleId={vehicleId} />
+
+      {/* Só o admin vê o editor de geofence */}
       {user?.role === 'admin' && (
         <>
-          <h2>Definir Área de Circulação</h2>
+          <h2 className="text-xl font-semibold mt-6 mb-2">Definir Área de Circulação</h2>
           <GeofenceEditor vehicleId={vehicleId} initialGeo={initialGeo} />
         </>
       )}

@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { AuthContext }     from '../contexts/AuthContext';
 import VehicleControls     from '../components/VehicleControls';
 import api                 from '../api';
-
+import GeofenceEditor from '../components/GeofenceEditor';
 // carregar só no cliente
 const VehicleMap     = lazy(() => import('../components/VehicleMap'));
 const GeofenceEditor = lazy(() => import('../components/GeofenceEditor'));

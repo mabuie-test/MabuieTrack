@@ -4,12 +4,14 @@ import api    from '../../src/api';
 import { useState } from 'react';
 
 export default function VehiclesPage() {
-  const { data: users }    = useSWR('/users', () => api.get('/users').then(r => r.data));
+  const { data: users }    = useSWR(
+    '/users',
+    () => api.get('/users').then(r => r.data)
+  );
   const { data: vehicles, mutate } = useSWR(
     '/vehicles',
     () => api.get('/vehicles').then(r => r.data)
   );
-
   const [form, setForm] = useState({
     plate:   '',
     model:   '',
@@ -19,37 +21,25 @@ export default function VehiclesPage() {
   const createVehicle = async e => {
     e.preventDefault();
     try {
-      const payload = {
-        plate: form.plate,
-        model: form.model,
-        ...(form.ownerId ? { ownerId: form.ownerId } : {})
-      };
-      const res = await api.post('/vehicles', payload);
-      setForm({ plate: '', model: '', ownerId: '' });
-      mutate(); 
-      alert(`Veículo "${res.data.plate}" criado com sucesso!`);
+      await api.post('/vehicles', form);
+      setForm({ plate:'', model:'', ownerId:'' });
+      mutate(); // revalida lista
     } catch (err) {
-      console.error('Erro ao criar veículo:', err);
-      // puxa a mensagem vinda do back‑end, ou fallback genérico
+      // Mostra a mensagem vinda do backend
       const msg = err.response?.data?.message
-        || 'Erro desconhecido ao criar veículo.';
-      alert(`Erro ao criar veículo: ${msg}`);
+        || 'Erro ao criar o veículo';
+      alert(msg);
     }
   };
 
   const deleteVehicle = async id => {
-    if (!confirm('Eliminar veículo?')) return;
-    try {
+    if (confirm('Eliminar veículo?')) {
       await api.delete(`/vehicles/${id}`);
       mutate();
-    } catch (err) {
-      console.error('Erro ao eliminar veículo:', err);
-      alert(err.response?.data?.message || err.message);
     }
   };
 
   if (!users || !vehicles) return <p>Carregando…</p>;
-
   return (
     <div style={{ padding:'1rem' }}>
       <h2>Veículos</h2>
@@ -61,34 +51,27 @@ export default function VehiclesPage() {
           </li>
         ))}
       </ul>
-
       <h3>Cadastrar Veículo</h3>
       <form onSubmit={createVehicle}>
         <input
           placeholder="plate"
           value={form.plate}
           onChange={e => setForm({ ...form, plate: e.target.value })}
-          required
         /><br/>
-
         <input
           placeholder="model"
           value={form.model}
           onChange={e => setForm({ ...form, model: e.target.value })}
         /><br/>
-
         <select
           value={form.ownerId}
           onChange={e => setForm({ ...form, ownerId: e.target.value })}
         >
           <option value="">-- sem proprietário --</option>
           {users.map(u => (
-            <option key={u._id} value={u._id}>
-              {u.username}
-            </option>
+            <option key={u._id} value={u._id}>{u.username}</option>
           ))}
         </select><br/>
-
         <button type="submit">Cadastrar</button>
       </form>
     </div>

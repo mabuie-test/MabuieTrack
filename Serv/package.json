@@ -17,6 +17,8 @@
     "socket.io":                          "^4.6.1",
     "@turf/boolean-point-in-polygon":     "^6.5.0",
     "@turf/helpers":                      "^6.5.0"
+  "fluent-ffmpeg": "^2.1.2",
+  "@ffmpeg-installer/ffmpeg": "^1.1.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.22"

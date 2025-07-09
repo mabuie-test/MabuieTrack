@@ -5,21 +5,24 @@ import Router from 'next/router';
 export const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
+  const [user, setUser]     = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Tenta ler do localStorage
     const stored = JSON.parse(localStorage.getItem('auth'));
     if (stored?.token) {
       api.defaults.headers.common['Authorization'] = `Bearer ${stored.token}`;
       setUser(stored);
     }
+    setLoading(false);
   }, []);
 
   async function login(email, password) {
-    const { data } = await api.post('/auth/login',{email,password});
-    const [,payload] = data.token.split('.');
+    const { data } = await api.post('/auth/login', { email, password });
+    const [, payload] = data.token.split('.');
     const { role } = JSON.parse(atob(payload));
-    const auth = { token:data.token, role };
+    const auth = { token: data.token, role };
     localStorage.setItem('auth', JSON.stringify(auth));
     api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
     setUser(auth);
@@ -34,7 +37,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,4 +1,5 @@
 // src/controllers/vehicleController.js
+
 import Vehicle from '../models/Vehicle.js';
 import User    from '../models/User.js';
 

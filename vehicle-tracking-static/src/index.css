@@ -1,0 +1,5 @@
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body, #root { height:100%; }
+body { font-family: sans-serif; background: #f0f0f0; }
+a { text-decoration: none; color: #0077cc; }
+button { cursor: pointer; }

@@ -1,5 +1,8 @@
 // src/routes/vehicles.js
 import { Router } from 'express';
+import path       from 'path';
+import fs         from 'fs';
+import Vehicle    from '../models/Vehicle.js';
 import {
   listVehicles,
   getVehicle,
@@ -7,25 +10,23 @@ import {
   updateVehicle,
   deleteVehicle
 } from '../controllers/vehicleController.js';
-
+import turfBoolean        from '@turf/boolean-point-in-polygon';
+import { point as turfPoint, polygon as turfPolygon } from '@turf/helpers';
 import { authenticateJWT } from '../middlewares/authenticateJWT.js';
 import { authorizeRoles }  from '../middlewares/authorizeRoles.js';
 import { restrictVehicle } from '../middlewares/restrictVehicle.js';
+import { ensureHlsStream } from '../services/videoStream.js';
 
-import Vehicle from '../models/Vehicle.js';
-import turfBoolean         from '@turf/boolean-point-in-polygon';
-import { point as turfPoint, polygon as turfPolygon } from '@turf/helpers';
+const router = Router();
 
-const r = Router();
-
-// Todas as rotas de veículos exigem autenticação
-r.use(authenticateJWT);
+// todas as rotas exigem token
+router.use(authenticateJWT);
 
 /**
  * 0) GET /api/vehicles/:id
- *    Detalhes do veículo (inclui geofence)
+ *    detalhes do veículo (inclui geofence, rtspUrl)
  */
-r.get(
+router.get(
   '/:id',
   authorizeRoles('admin','user'),
   restrictVehicle,
@@ -34,15 +35,15 @@ r.get(
 
 /**
  * 1) POST /api/vehicles/:id/geofence
- *    Definir/atualizar Geofence (admin only)
+ *    define ou atualiza o geofence
  */
-r.post(
+router.post(
   '/:id/geofence',
   authorizeRoles('admin'),
   async (req, res) => {
     try {
       const { id } = req.params;
-      const { coordinates } = req.body; // [ [lng, lat], ... ]
+      const { coordinates } = req.body; // array [ [lng,lat], ... ]
       const v = await Vehicle.findByIdAndUpdate(
         id,
         { geofence: { type: 'Polygon', coordinates: [coordinates] } },
@@ -59,9 +60,9 @@ r.post(
 
 /**
  * 2) POST /api/vehicles/:id/telemetry
- *    Recebe telemetria, salva, emite Socket.IO e verifica geofence
+ *    recebe telemetria, salva, emite Socket.IO e verifica geofence
  */
-r.post(
+router.post(
   '/:id/telemetry',
   authorizeRoles('admin','user'),
   restrictVehicle,
@@ -76,11 +77,9 @@ r.post(
       v.telemetry.push(point);
       await v.save();
 
-      // Emite telemetria via WebSocket
       const io = req.app.get('io');
       io.to(`vehicle_${id}`).emit('newTelemetry', { vehicleId: id, point });
 
-      // Verifica geofence
       if (v.geofence?.coordinates?.length) {
         const inside = turfBoolean(
           turfPoint([lng, lat]),
@@ -100,10 +99,10 @@ r.post(
 );
 
 /**
- * 3) GET /api/vehicles/:id/history?range=day|week|month
- *    Histórico filtrado por data (admin ou user alocado)
+ * 3) GET /api/vehicles/:id/history
+ *    histórico filtrado por range
  */
-r.get(
+router.get(
   '/:id/history',
   authorizeRoles('admin','user'),
   restrictVehicle,
@@ -125,10 +124,9 @@ r.get(
 );
 
 /**
- * 4) POST /api/vehicles/:id/engine-kill
- *    Emite comando de corte de motor (admin ou user alocado)
+ * 4) & 5) engine-kill / engine-enable
  */
-r.post(
+router.post(
   '/:id/engine-kill',
   authorizeRoles('admin','user'),
   restrictVehicle,
@@ -137,7 +135,6 @@ r.post(
       const { id } = req.params;
       const v = await Vehicle.findById(id);
       if (!v) return res.sendStatus(404);
-
       const io = req.app.get('io');
       io.to(`vehicle_${id}`).emit('engineStatus', { vehicleId: id, status: 'disabled' });
       res.json({ message: 'Comando de corte enfileirado' });
@@ -148,11 +145,7 @@ r.post(
   }
 );
 
-/**
- * 5) POST /api/vehicles/:id/engine-enable
- *    Emite comando de habilitar motor (admin ou user alocado)
- */
-r.post(
+router.post(
   '/:id/engine-enable',
   authorizeRoles('admin','user'),
   restrictVehicle,
@@ -161,7 +154,6 @@ r.post(
       const { id } = req.params;
       const v = await Vehicle.findById(id);
       if (!v) return res.sendStatus(404);
-
       const io = req.app.get('io');
       io.to(`vehicle_${id}`).emit('engineStatus', { vehicleId: id, status: 'enabled' });
       res.json({ message: 'Comando de habilitação enfileirado' });
@@ -173,16 +165,37 @@ r.post(
 );
 
 /**
- * 6) GET /api/vehicles
- *    Listagem de veículos (admin vê todos; user só os seus)
+ * 6) Listagem geral
  */
-r.get('/', authorizeRoles('admin','user'), listVehicles);
+router.get('/', authorizeRoles('admin','user'), listVehicles);
 
 /**
- * 7) CRUD de veículos (admin only)
+ * 7) CRUD (admin)
  */
-r.post('/', authorizeRoles('admin'), createVehicle);
-r.put('/:id', authorizeRoles('admin'), updateVehicle);
-r.delete('/:id', authorizeRoles('admin'), deleteVehicle);
+router.post('/', authorizeRoles('admin'), createVehicle);
+router.put('/:id', authorizeRoles('admin'), updateVehicle);
+router.delete('/:id', authorizeRoles('admin'), deleteVehicle);
 
-export default r;
+/**
+ * 8) Streaming de vídeo HLS: /api/vehicles/:id/video/*
+ */
+router.get('/:id/video/:filename', async (req, res) => {
+  try {
+    const { id, filename } = req.params;
+    // carrega o veículo para obter o rtspUrl
+    const v = await Vehicle.findById(id);
+    if (!v?.rtspUrl) return res.sendStatus(404);
+
+    // garante pasta e playlist gerados
+    ensureHlsStream(id, v.rtspUrl);
+
+    const filePath = path.resolve('/tmp/streams', id, filename);
+    if (!fs.existsSync(filePath)) return res.sendStatus(404);
+    res.sendFile(filePath);
+  } catch (err) {
+    console.error('video-stream:', err);
+    res.status(500).json({ message: 'Erro ao servir vídeo' });
+  }
+});
+
+export default router;

@@ -1,36 +1,31 @@
-// backend/services/videoStream.js
-import ffmpegPath from '@ffmpeg-installer/ffmpeg';
 import ffmpeg from 'fluent-ffmpeg';
+import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 import path from 'path';
-import fs from 'fs';
 
-ffmpeg.setFfmpegPath(ffmpegPath.path);
+ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
-// Gere HLS para cada veículo sob /tmp/streams/:id/
-export function ensureHlsStream(vehicleId, rtspUrl) {
-  const outDir = path.resolve('/tmp/streams', vehicleId);
-  if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
+/**
+ * Stream HLS de um arquivo de vídeo pré-gravado
+ * (substitua `input.mp4` pela fonte real do stream do veículo)
+ */
+export const streamVideo = (req, res) => {
+  const { id } = req.params;
+  // Aqui, hipoteticamente, cada veículo tem um arquivo em disk:
+  const inputPath = path.resolve(process.cwd(), 'videos', `${id}.mp4`);
+  
+  res.statusCode = 200;
+  res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
 
-  const playlist = path.join(outDir, 'index.m3u8');
-  // Se já existe e foi criado nos últimos X minutos, não recria
-  const stat = fs.existsSync(playlist) && fs.statSync(playlist);
-  if (stat && (Date.now() - stat.mtimeMs < 5 * 60 * 1000)) {
-    return; // Já temos stream recente
-  }
-
-  // Iniciar ffmpeg para converter RTSP ➔ HLS
-  ffmpeg(rtspUrl)
-    .addOptions([
-      '-profile:v baseline',  // compatível com HLS em HTML5
-      '-level 3.0',
-      '-s 640x360',           // resolução
-      '-start_number 0',
-      '-hls_time 2',          // cada segmento 2s
-      '-hls_list_size 3',     // somente 3 segmentos no playlist
-      '-f hls'
+  ffmpeg(inputPath)
+    .format('hls')
+    .outputOptions([
+      '-hls_time 2',        // duração de cada segmento em segundos
+      '-hls_list_size 5',   // quantos segmentos manter no playlist
+      '-hls_flags delete_segments'
     ])
-    .output(playlist)
-    .on('start', cmd => console.log(`FFmpeg iniciado: ${cmd}`))
-    .on('error', err => console.error('FFmpeg erro:', err.message))
-    .run();
-}
+    .on('error', err => {
+      console.error('streamVideo FFmpeg error:', err);
+      if (!res.headersSent) res.status(500).send('Erro no streaming');
+    })
+    .pipe(res, { end: true });
+};

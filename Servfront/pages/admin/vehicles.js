@@ -19,25 +19,21 @@ export default function VehiclesPage() {
   const createVehicle = async e => {
     e.preventDefault();
     try {
-      // só envia ownerId se não for string vazia
       const payload = {
         plate: form.plate,
         model: form.model,
         ...(form.ownerId ? { ownerId: form.ownerId } : {})
       };
       const res = await api.post('/vehicles', payload);
-      // limpa o form
       setForm({ plate: '', model: '', ownerId: '' });
-      // refaz a lista
-      mutate();
-      alert(`Veículo ${res.data.plate} criado com sucesso!`);
+      mutate(); 
+      alert(`Veículo "${res.data.plate}" criado com sucesso!`);
     } catch (err) {
       console.error('Erro ao criar veículo:', err);
-      alert(
-        err.response?.data?.message ||
-        err.message ||
-        'Erro desconhecido ao criar veículo'
-      );
+      // puxa a mensagem vinda do back‑end, ou fallback genérico
+      const msg = err.response?.data?.message
+        || 'Erro desconhecido ao criar veículo.';
+      alert(`Erro ao criar veículo: ${msg}`);
     }
   };
 
@@ -97,4 +93,4 @@ export default function VehiclesPage() {
       </form>
     </div>
   );
-            }
+}

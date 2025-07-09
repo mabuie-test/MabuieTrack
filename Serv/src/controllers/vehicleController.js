@@ -14,7 +14,7 @@ export const listVehicles = async (req, res) => {
       const u = await User.findById(req.user.id);
       filter = { _id: { $in: u.assignedCars } };
     }
-    const vs = await Vehicle.find(filter);
+    const vs = await Vehicle.find(filter).populate('owner', 'username email');
     res.json(vs);
   } catch (err) {
     console.error('listVehicles:', err);
@@ -29,8 +29,9 @@ export const listVehicles = async (req, res) => {
 export const getVehicle = async (req, res) => {
   try {
     const { id } = req.params;
-    const v = await Vehicle.findById(id).populate('owner', 'email role');
-    if (!v) return res.sendStatus(404);
+    const v = await Vehicle.findById(id)
+      .populate('owner', 'username email');
+    if (!v) return res.status(404).json({ message: 'Veículo não encontrado' });
     res.json(v);
   } catch (err) {
     console.error('getVehicle:', err);
@@ -45,15 +46,44 @@ export const getVehicle = async (req, res) => {
 export const createVehicle = async (req, res) => {
   try {
     const { plate, model, ownerId } = req.body;
-    const v = new Vehicle({ plate, model, owner: ownerId });
-    await v.save();
-    if (ownerId) {
-      await User.findByIdAndUpdate(ownerId, { $push: { assignedCars: v._id } });
+
+    // Validação mínima
+    if (!plate || !plate.trim()) {
+      return res.status(400).json({ message: 'O campo "plate" é obrigatório.' });
     }
+
+    // Cria o veículo
+    const v = new Vehicle({
+      plate: plate.trim(),
+      model: model?.trim() || '',
+      owner: ownerId || undefined
+    });
+    await v.save();
+
+    // Se veio ownerId, associa o carro ao usuário
+    if (ownerId) {
+      await User.findByIdAndUpdate(ownerId, {
+        $addToSet: { assignedCars: v._id }
+      });
+    }
+
     res.status(201).json(v);
   } catch (err) {
     console.error('createVehicle:', err);
-    res.status(500).json({ message: 'Erro ao criar veículo' });
+
+    // Placa duplicada
+    if (err.code === 11000) {
+      return res.status(400).json({
+        message: 'Já existe um veículo cadastrado com esta placa.'
+      });
+    }
+
+    // Erro de validação do Mongoose
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({ message: err.message });
+    }
+
+    res.status(500).json({ message: 'Erro interno ao criar veículo' });
   }
 };
 
@@ -65,23 +95,33 @@ export const updateVehicle = async (req, res) => {
   try {
     const { plate, model, ownerId } = req.body;
     const v = await Vehicle.findById(req.params.id);
-    if (!v) return res.sendStatus(404);
+    if (!v) return res.status(404).json({ message: 'Veículo não encontrado' });
 
-    // Reatribui se owner mudou
-    if (ownerId && v.owner?.toString() !== ownerId) {
+    // Se owner mudou, ajusta assignedCars
+    if (ownerId && String(v.owner) !== ownerId) {
       if (v.owner) {
-        await User.findByIdAndUpdate(v.owner, { $pull: { assignedCars: v._id } });
+        await User.findByIdAndUpdate(v.owner, {
+          $pull: { assignedCars: v._id }
+        });
       }
-      await User.findByIdAndUpdate(ownerId, { $push: { assignedCars: v._id } });
+      await User.findByIdAndUpdate(ownerId, {
+        $addToSet: { assignedCars: v._id }
+      });
     }
 
-    v.plate = plate;
-    v.model = model;
-    v.owner = ownerId;
+    v.plate = plate?.trim() || v.plate;
+    v.model = model?.trim() || v.model;
+    v.owner = ownerId || null;
     await v.save();
+
     res.json(v);
   } catch (err) {
     console.error('updateVehicle:', err);
+    if (err.code === 11000) {
+      return res.status(400).json({
+        message: 'Já existe um veículo cadastrado com esta placa.'
+      });
+    }
     res.status(500).json({ message: 'Erro ao atualizar veículo' });
   }
 };
@@ -93,11 +133,14 @@ export const updateVehicle = async (req, res) => {
 export const deleteVehicle = async (req, res) => {
   try {
     const v = await Vehicle.findByIdAndDelete(req.params.id);
-    if (!v) return res.sendStatus(404);
+    if (!v) return res.status(404).json({ message: 'Veículo não encontrado' });
+
     if (v.owner) {
-      await User.findByIdAndUpdate(v.owner, { $pull: { assignedCars: v._id } });
+      await User.findByIdAndUpdate(v.owner, {
+        $pull: { assignedCars: v._id }
+      });
     }
-    res.json({ message: 'Veículo eliminado' });
+    res.json({ message: 'Veículo eliminado com sucesso' });
   } catch (err) {
     console.error('deleteVehicle:', err);
     res.status(500).json({ message: 'Erro ao eliminar veículo' });

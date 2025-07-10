@@ -4,42 +4,27 @@ import api    from '../../src/api';
 import { useState } from 'react';
 
 export default function VehiclesPage() {
-  const { data: users }    = useSWR(
-    '/users',
-    () => api.get('/users').then(r => r.data)
-  );
+  const { data: users }    = useSWR('/users', () => api.get('/users').then(r => r.data));
   const { data: vehicles, mutate } = useSWR(
     '/vehicles',
     () => api.get('/vehicles').then(r => r.data)
   );
-  const [form, setForm] = useState({
-    plate:   '',
-    model:   '',
-    ownerId: ''
-  });
+  const [form, setForm] = useState({ plate: '', model: '', ownerId: '' });
 
   const createVehicle = async e => {
     e.preventDefault();
     try {
       await api.post('/vehicles', form);
-      setForm({ plate:'', model:'', ownerId:'' });
-      mutate(); // revalida lista
+      setForm({ plate: '', model: '', ownerId: '' });
+      await mutate();
     } catch (err) {
-      // Mostra a mensagem vinda do backend
-      const msg = err.response?.data?.message
-        || 'Erro ao criar o veículo';
+      const msg = err.response?.data?.message || 'Erro ao criar o veículo';
       alert(msg);
     }
   };
 
-  const deleteVehicle = async id => {
-    if (confirm('Eliminar veículo?')) {
-      await api.delete(`/vehicles/${id}`);
-      mutate();
-    }
-  };
-
   if (!users || !vehicles) return <p>Carregando…</p>;
+
   return (
     <div style={{ padding:'1rem' }}>
       <h2>Veículos</h2>
@@ -47,10 +32,16 @@ export default function VehiclesPage() {
         {vehicles.map(v => (
           <li key={v._id}>
             {v.plate} — {v.model} — owner: {v.owner?.username || 'nenhum'}{' '}
-            <button onClick={() => deleteVehicle(v._id)}>Eliminar</button>
+            <button onClick={async () => {
+              if (confirm('Eliminar veículo?')) {
+                await api.delete(`/vehicles/${v._id}`);
+                mutate();
+              }
+            }}>Eliminar</button>
           </li>
         ))}
       </ul>
+
       <h3>Cadastrar Veículo</h3>
       <form onSubmit={createVehicle}>
         <input
